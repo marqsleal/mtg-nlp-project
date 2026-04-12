@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MTG Card Search Document",
+  "type": "object",
+  "required": ["id", "name", "set", "rarity", "search_text", "_vectors"],
+  "properties": {
+    "id": { "type": "string" },
+    "oracle_id": { "type": ["string", "null"] },
+    "name": { "type": "string" },
+    "lang": { "type": "string" },
+    "released_at": { "type": ["string", "null"], "format": "date" },
+    "set": { "type": "string" },
+    "set_name": { "type": ["string", "null"] },
+    "collector_number": { "type": ["string", "null"] },
+    "rarity": { "type": "string" },
+    "mana_cost": { "type": ["string", "null"] },
+    "cmc": { "type": ["number", "null"] },
+    "type_line": { "type": ["string", "null"] },
+    "oracle_text": { "type": ["string", "null"] },
+    "colors": {
+      "type": ["array", "null"],
+      "items": { "type": "string" }
+    },
+    "color_identity": {
+      "type": ["array", "null"],
+      "items": { "type": "string" }
+    },
+    "keywords": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "legalities": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "rulings_text": { "type": "string" },
+    "search_text": { "type": "string" },
+    "_vectors": {
+      "type": "object",
+      "required": ["bge_m3"],
+      "properties": {
+        "bge_m3": {
+          "type": "array",
+          "minItems": 1024,
+          "maxItems": 1024,
+          "items": { "type": "number" }
+        }
+      }
+    }
+  },
+  "additionalProperties": true
+}

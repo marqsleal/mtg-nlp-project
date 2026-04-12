@@ -1,0 +1,50 @@
+{
+  "searchableAttributes": [
+    "name",
+    "oracle_text",
+    "type_line",
+    "rulings_text",
+    "search_text"
+  ],
+  "displayedAttributes": [
+    "id",
+    "oracle_id",
+    "name",
+    "lang",
+    "released_at",
+    "set",
+    "set_name",
+    "collector_number",
+    "rarity",
+    "mana_cost",
+    "cmc",
+    "type_line",
+    "oracle_text",
+    "colors",
+    "color_identity",
+    "keywords",
+    "legalities",
+    "rulings_text",
+    "search_text",
+    "_vectors"
+  ],
+  "filterableAttributes": [
+    "set",
+    "rarity",
+    "lang",
+    "released_at",
+    "colors",
+    "color_identity"
+  ],
+  "sortableAttributes": [
+    "released_at",
+    "name",
+    "cmc"
+  ],
+  "embedders": {
+    "bge_m3": {
+      "source": "userProvided",
+      "dimensions": 1024
+    }
+  }
+}
