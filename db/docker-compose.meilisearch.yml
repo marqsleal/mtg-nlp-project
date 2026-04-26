@@ -1,7 +1,6 @@
 services:
   meilisearch:
     image: getmeili/meilisearch:v1.11
-    container_name: meilisearch
     restart: unless-stopped
     ports:
       - "7700:7700"

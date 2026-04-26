@@ -10,8 +10,10 @@ PYTHON_INTERPRETER = python
 PYTHON_VER = 3.13
 PYTHON = $(PYTHON_INTERPRETER)$(PYTHON_VER)
 COMPOSE = docker compose
-MEILI_COMPOSE = $(COMPOSE) --env-file .env -f db/docker-compose.meilisearch.yml
-STORAGE_COMPOSE = $(COMPOSE) --env-file .env -f db/docker-compose.storage.yml
+MEILI_PROJECT = mtg-meilisearch
+STORAGE_PROJECT = mtg-storage
+MEILI_COMPOSE = $(COMPOSE) --env-file .env -p $(MEILI_PROJECT) -f db/docker-compose.meilisearch.yml
+STORAGE_COMPOSE = $(COMPOSE) --env-file .env -p $(STORAGE_PROJECT) -f db/docker-compose.storage.yml
 
 VENV_NAME = .venv
 VENV_BIN = $(VENV_NAME)/bin
@@ -62,32 +64,23 @@ meilisearch_up:
 
 .PHONY: meilisearch_down
 meilisearch_down:
-	@$(MEILI_COMPOSE) down
+	@$(MEILI_COMPOSE) down --remove-orphans
 
 .PHONY: meilisearch_logs
 meilisearch_logs:
 	@$(MEILI_COMPOSE) logs -f meilisearch
 
-.PHONY: infra.storage.up
-infra.storage.up:
+.PHONY: storage_up
+storage_up:
 	@$(STORAGE_COMPOSE) up -d --build
 
-.PHONY: infra.storage.down
-infra.storage.down:
-	@$(STORAGE_COMPOSE) down
-
-.PHONY: infra.storage.logs
-infra.storage.logs:
-	@$(STORAGE_COMPOSE) logs -f minio
-
-.PHONY: storage_up
-storage_up: infra.storage.up
-
 .PHONY: storage_down
-storage_down: infra.storage.down
+storage_down:
+	@$(STORAGE_COMPOSE) down --remove-orphans
 
 .PHONY: storage_logs
-storage_logs: infra.storage.logs
+storage_logs:
+	@$(STORAGE_COMPOSE) logs -f minio
 
 
 ## etl
@@ -121,6 +114,8 @@ etl_semantic_layer:
 	@$(VENV_PYTHON) -m etl.run_semantic_layer_build \
 	--meili-api-key "$(MEILISEARCH_API_KEY)"
 
+
+# API
 .PHONY: api_dev
 api_dev:
 	@$(VENV_PYTHON) -m uvicorn app.src.main:app --host 0.0.0.0 --port 8000 --reload
