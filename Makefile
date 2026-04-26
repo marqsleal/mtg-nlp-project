@@ -103,6 +103,10 @@ etl_semantic_layer:
 api_dev:
 	@$(VENV_PYTHON) -m uvicorn app.src.main:app --host 0.0.0.0 --port 8000 --reload
 
+.PHONY: api_prod
+api_prod:
+	@$(VENV_PYTHON) -m uvicorn app.src.main:app --host 0.0.0.0 --port 8000 --workers 2
+
 
 ## cleanup
 .PHONY: clean

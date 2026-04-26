@@ -94,9 +94,15 @@ class DomainSemanticLayerService:
         return unique
 
     def _search_term_document(self, term: str) -> list[dict[str, Any]]:
+        started = time.perf_counter()
         if self.cache_ttl_seconds > 0:
             cached = self._cache.get(term)
             if cached is not None and cached[0] > time.time():
+                logger.info(
+                    "EXIT  lookup_semantic_term term=%s cache=hit expansions=%s",
+                    term,
+                    len(cached[1]),
+                )
                 return cached[1]
 
         payload = {
@@ -132,6 +138,12 @@ class DomainSemanticLayerService:
 
         if self.cache_ttl_seconds > 0:
             self._cache[term] = (time.time() + self.cache_ttl_seconds, expansions)
+        logger.info(
+            "EXIT  lookup_semantic_term term=%s cache=miss expansions=%s duration_ms=%s",
+            term,
+            len(expansions),
+            int((time.perf_counter() - started) * 1000),
+        )
         return expansions
 
     def expand_query(

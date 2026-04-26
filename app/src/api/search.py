@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import logging
 from time import perf_counter
 from typing import Annotated
@@ -88,6 +89,16 @@ def _apply_rerank(
     return reranked_hits + hits[rerank_top_k:]
 
 
+def _is_in_rollout_bucket(key: str, percent: int) -> bool:
+    if percent <= 0:
+        return False
+    if percent >= 100:
+        return True
+    digest = hashlib.sha1(key.encode("utf-8")).hexdigest()
+    bucket = int(digest[:8], 16) % 100
+    return bucket < percent
+
+
 @router.post("/search", response_model=SearchResponse)
 def semantic_search(
     payload: SearchRequest,
@@ -101,6 +112,7 @@ def semantic_search(
 ) -> SearchResponse:
     logger.info("ENTER endpoint=v1_search")
     start = perf_counter()
+    query_key = payload.query.strip().lower()
 
     limit = min(payload.limit or settings.search_default_limit, settings.search_max_limit)
     offset = payload.offset if payload.offset is not None else settings.search_default_offset
@@ -127,18 +139,28 @@ def semantic_search(
         if payload.rerank_weight is not None
         else settings.rerank_default_weight
     )
-    fusion_mode = (
-        payload.fusion_mode if payload.fusion_mode is not None else settings.search_fusion_mode
-    )
+    if payload.fusion_mode is not None:
+        fusion_mode = payload.fusion_mode
+    elif settings.search_fusion_mode == "rrf":
+        if _is_in_rollout_bucket(query_key, settings.search_rrf_rollout_percent):
+            fusion_mode = "rrf"
+        else:
+            fusion_mode = "hybrid"
+    else:
+        fusion_mode = "hybrid"
     rrf_k = payload.rrf_k if payload.rrf_k is not None else settings.search_rrf_k
     rrf_window = (
         payload.rrf_window if payload.rrf_window is not None else settings.search_rrf_window
     )
-    query_expansion_enabled = (
-        payload.query_expansion
-        if payload.query_expansion is not None
-        else settings.query_expansion_enabled
-    )
+    if payload.query_expansion is not None:
+        query_expansion_enabled = payload.query_expansion
+    elif settings.query_expansion_enabled:
+        query_expansion_enabled = _is_in_rollout_bucket(
+            query_key,
+            settings.query_expansion_rollout_percent,
+        )
+    else:
+        query_expansion_enabled = False
     expansion_max_terms = (
         payload.expansion_max_terms
         if payload.expansion_max_terms is not None
@@ -158,6 +180,8 @@ def semantic_search(
     query_expansion_applied = False
     expanded_terms: list[str] = []
     expanded_query: str | None = None
+    expansion_time_ms = 0
+    expansion_started = perf_counter()
     if query_expansion_enabled:
         try:
             (
@@ -176,10 +200,14 @@ def semantic_search(
             query_expansion_applied = False
             expanded_terms = []
             expanded_query = None
+    expansion_time_ms = int((perf_counter() - expansion_started) * 1000)
 
+    embedding_started = perf_counter()
     query_vector = embedding_service.embed_query(retrieval_query)
+    embedding_time_ms = int((perf_counter() - embedding_started) * 1000)
 
     estimated_total_hits = 0
+    retrieval_started = perf_counter()
     if fusion_mode == "rrf":
         retrieval_window = min(
             max(rrf_window, retrieval_limit),
@@ -228,9 +256,12 @@ def semantic_search(
         raw_hits = search_result.get("hits", [])
         estimated_total_hits = int(search_result.get("estimatedTotalHits", 0))
         candidate_limit = retrieval_limit
+    retrieval_time_ms = int((perf_counter() - retrieval_started) * 1000)
 
     rerank_applied = False
     mode = "rrf" if fusion_mode == "rrf" else "hybrid"
+    rerank_time_ms = 0
+    rerank_started = perf_counter()
     if rerank_enabled and raw_hits:
         raw_hits = _apply_rerank(
             hits=raw_hits,
@@ -241,6 +272,7 @@ def semantic_search(
         )
         rerank_applied = True
         mode = "rrf_reranked" if fusion_mode == "rrf" else "hybrid_reranked"
+    rerank_time_ms = int((perf_counter() - rerank_started) * 1000)
 
     if payload.min_ranking_score is not None:
         raw_hits = [
@@ -292,18 +324,25 @@ def semantic_search(
         fusion_mode=fusion_mode,
         rrf_k=rrf_k if fusion_mode == "rrf" else None,
         rrf_window=rrf_window if fusion_mode == "rrf" else None,
+        query_expansion_enabled=query_expansion_enabled,
         query_expansion_applied=query_expansion_applied,
         expanded_terms=expanded_terms,
         expanded_query=expanded_query,
+        embedding_time_ms=embedding_time_ms,
+        expansion_time_ms=expansion_time_ms,
+        retrieval_time_ms=retrieval_time_ms,
+        rerank_time_ms=rerank_time_ms,
     )
     logger.info(
-        "EXIT  endpoint=v1_search duration_ms=%s mode=%s fusion=%s query_expansion=%s "
-        "query_expansion_max_terms=%s query_expansion_min_score=%.2f query_len=%s "
-        "limit=%s candidate_limit=%s hits=%s rerank=%s",
+        "EXIT  endpoint=v1_search duration_ms=%s mode=%s fusion=%s query_expansion_enabled=%s "
+        "query_expansion_applied=%s query_expansion_max_terms=%s "
+        "query_expansion_min_score=%.2f query_len=%s limit=%s candidate_limit=%s hits=%s "
+        "rerank=%s expansion_ms=%s embedding_ms=%s retrieval_ms=%s rerank_ms=%s",
         total_ms,
         mode,
         fusion_mode,
         query_expansion_enabled,
+        query_expansion_applied,
         expansion_max_terms,
         expansion_min_score,
         len(payload.query),
@@ -311,5 +350,9 @@ def semantic_search(
         candidate_limit,
         len(hits),
         rerank_applied,
+        expansion_time_ms,
+        embedding_time_ms,
+        retrieval_time_ms,
+        rerank_time_ms,
     )
     return SearchResponse(hits=hits, meta=meta)

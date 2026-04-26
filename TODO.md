@@ -220,11 +220,11 @@ Ativar por ambiente/percentual com fallback garantido.
 - Métricas comparativas publicadas por modo de retrieval.
 
 ### Checklist da issue
-- [ ] Criar dataset de avaliação.
-- [ ] Rodar benchmark baseline vs `rrf` vs combinações com expansão.
-- [ ] Adicionar logs estruturados do serviço de expansão e da fusão.
-- [ ] Definir e executar estratégia de rollout progressivo.
-- [ ] Garantir execução em produção sem `--reload` e com processo quente.
+- [x] Criar dataset de avaliação.
+- [x] Rodar benchmark baseline vs `rrf` vs combinações com expansão.
+- [x] Adicionar logs estruturados do serviço de expansão e da fusão.
+- [x] Definir e executar estratégia de rollout progressivo.
+- [x] Garantir execução em produção sem `--reload` e com processo quente.
 
 ---
 

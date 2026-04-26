@@ -33,12 +33,24 @@ class Settings(BaseSettings):
         ge=0,
         alias="QUERY_EXPANSION_CACHE_TTL_SECONDS",
     )
+    query_expansion_rollout_percent: int = Field(
+        default=100,
+        ge=0,
+        le=100,
+        alias="QUERY_EXPANSION_ROLLOUT_PERCENT",
+    )
     search_fusion_mode: Literal["hybrid", "rrf"] = Field(
         default="hybrid",
         alias="SEARCH_FUSION_MODE",
     )
     search_rrf_k: int = Field(default=60, ge=1, alias="SEARCH_RRF_K")
     search_rrf_window: int = Field(default=100, ge=1, alias="SEARCH_RRF_WINDOW")
+    search_rrf_rollout_percent: int = Field(
+        default=100,
+        ge=0,
+        le=100,
+        alias="SEARCH_RRF_ROLLOUT_PERCENT",
+    )
 
     embedding_model_profile: str = Field(
         default="bge_small_en_v15",

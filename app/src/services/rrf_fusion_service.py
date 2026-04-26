@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import logging
 from typing import Any
+
+logger = logging.getLogger("app.services.rrf_fusion")
 
 
 def fuse_rrf(
@@ -10,6 +13,13 @@ def fuse_rrf(
     k: int,
     window: int,
 ) -> list[dict[str, Any]]:
+    logger.info(
+        "ENTER fuse_rrf fts_hits=%s vector_hits=%s k=%s window=%s",
+        len(fts_hits),
+        len(vector_hits),
+        k,
+        window,
+    )
     if k <= 0:
         raise ValueError("k must be > 0")
     if window <= 0:
@@ -77,4 +87,5 @@ def fuse_rrf(
         ),
         reverse=True,
     )
+    logger.info("EXIT  fuse_rrf fused_hits=%s", len(fused))
     return fused

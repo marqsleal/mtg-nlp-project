@@ -84,9 +84,14 @@ class SearchMeta(BaseModel):
     fusion_mode: Literal["hybrid", "rrf"]
     rrf_k: int | None = None
     rrf_window: int | None = None
+    query_expansion_enabled: bool = False
     query_expansion_applied: bool = False
     expanded_terms: list[str] = Field(default_factory=list)
     expanded_query: str | None = None
+    embedding_time_ms: int = 0
+    expansion_time_ms: int = 0
+    retrieval_time_ms: int = 0
+    rerank_time_ms: int = 0
 
 
 class SearchResponse(BaseModel):
