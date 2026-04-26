@@ -10,6 +10,7 @@ PYTHON_INTERPRETER = python
 PYTHON_VER = 3.13
 PYTHON = $(PYTHON_INTERPRETER)$(PYTHON_VER)
 COMPOSE = docker compose
+MEILI_COMPOSE = $(COMPOSE) --env-file .env -f db/docker-compose.meilisearch.yml
 
 VENV_NAME = .venv
 VENV_BIN = $(VENV_NAME)/bin
@@ -56,15 +57,15 @@ format:
 # Docker Services
 .PHONY: meilisearch_up
 meilisearch_up:
-	@$(COMPOSE) -f db/docker-compose.meilisearch.yml up -d
+	@$(MEILI_COMPOSE) up -d --build
 
 .PHONY: meilisearch_down
 meilisearch_down:
-	@$(COMPOSE) -f db/docker-compose.meilisearch.yml down
+	@$(MEILI_COMPOSE) down
 
 .PHONY: meilisearch_logs
 meilisearch_logs:
-	@$(COMPOSE) -f db/docker-compose.meilisearch.yml logs -f meilisearch
+	@$(MEILI_COMPOSE) logs -f meilisearch
 
 
 ## etl
@@ -74,7 +75,24 @@ scryfall_etl:
 
 .PHONY: meilisearch_etl
 meilisearch_etl:
-	@$(VENV_PYTHON) -m etl.run_meilisearch_ingest --max-batches 1 --meili-api-key $${MEILISEARCH_API_KEY}
+	@$(VENV_PYTHON) -m etl.run_meilisearch_ingest \
+	--max-batches 1 \
+	--meili-api-key "$(MEILISEARCH_API_KEY)"
+
+.PHONY: meilisearch_etl_max
+meilisearch_etl_max:
+	@$(VENV_PYTHON) -m etl.run_meilisearch_ingest \
+	--meili-api-key "$(MEILISEARCH_API_KEY)" \
+	--model-profile bge_small_en_v15 \
+	--batch-size 256 \
+	--encode-batch-size 256 \
+	--cpu-threads 8 \
+	--upload-batch-size 2000 \
+	--upload-wait-tasks-every 8
+
+.PHONY: api_dev
+api_dev:
+	@$(VENV_PYTHON) -m uvicorn app.src.main:app --host 0.0.0.0 --port 8000 --reload
 
 
 ## cleanup

@@ -35,6 +35,40 @@ make scryfall_etl
 make meilisearch_etl
 ```
 
+## API de Busca Semântica
+
+Subir API local:
+
+```bash
+make api_dev
+```
+
+Endpoint:
+
+- `POST /v1/search`
+
+Payload mínimo:
+
+```json
+{
+  "query": "counter target spell"
+}
+```
+
+Payload com hiperparâmetros (opcionais):
+
+```json
+{
+  "query": "draw cards",
+  "limit": 5,
+  "offset": 0,
+  "filter": ["lang = en", "rarity = uncommon"],
+  "semantic_ratio": 1.0,
+  "show_ranking_score": true,
+  "min_ranking_score": 0.2
+}
+```
+
 Execução direta via módulo:
 
 ```bash

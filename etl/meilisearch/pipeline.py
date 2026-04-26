@@ -14,8 +14,9 @@ from .batching import (
     write_json_atomic,
 )
 from .client import MeiliSearchClient
+from .embedding_profiles import get_profile
 from .models import MeiliIngestResult
-from .vectorizer import BgeM3Vectorizer, load_rulings_map, vectorize_cards_batch_file
+from .vectorizer import SentenceTransformerVectorizer, load_rulings_map, vectorize_cards_batch_file
 
 logger = logging.getLogger("etl.meilisearch.pipeline")
 
@@ -52,9 +53,12 @@ def run_meilisearch_ingest(
     meili_api_key: str | None,
     index_uid: str,
     settings_path: Path,
-    model_name: str = "BAAI/bge-m3",
+    embedding_profile: str = "bge_small_en_v15",
     batch_size: int = 128,
+    encode_batch_size: int = 256,
+    cpu_threads: int | None = None,
     upload_batch_size: int = 1000,
+    upload_wait_tasks_every: int = 8,
     full_upload_batch: bool = False,
     resume: bool = True,
     from_batch: int | None = None,
@@ -62,6 +66,12 @@ def run_meilisearch_ingest(
 ) -> MeiliIngestResult:
     if not 1 <= batch_size <= 2048:
         raise ValueError(f"batch_size must be between 1 and 2048, got {batch_size}")
+    if encode_batch_size <= 0:
+        raise ValueError(f"encode_batch_size must be > 0, got {encode_batch_size}")
+    if cpu_threads is not None and cpu_threads <= 0:
+        raise ValueError(f"cpu_threads must be > 0 when provided, got {cpu_threads}")
+    if upload_wait_tasks_every < 0:
+        raise ValueError(f"upload_wait_tasks_every must be >= 0, got {upload_wait_tasks_every}")
 
     paths = EtlPaths.for_today(data_root)
     resolved_cards_path = cards_path if cards_path is not None else paths.cards_latest_jsonl()
@@ -71,19 +81,32 @@ def run_meilisearch_ingest(
     state_path = paths.meili_ingest_state_file()
 
     run_started_at = perf_counter()
+    profile = get_profile(embedding_profile)
+    model_name = profile.model_name
+    embedder_name = profile.embedder_name
+    embedding_dimensions = profile.dimensions
+
     logger.info("ENTER run_meilisearch_ingest index_uid=%s", index_uid)
     logger.debug(
         "ingest params cards_path=%s rulings_path=%s data_root=%s meili_url=%s "
-        "api_key=%s model=%s batch_size=%s upload_batch_size=%s full_upload_batch=%s "
+        "api_key=%s embedding_profile=%s model=%s embedder=%s "
+        "embedding_dimensions=%s batch_size=%s encode_batch_size=%s cpu_threads=%s "
+        "upload_batch_size=%s upload_wait_tasks_every=%s full_upload_batch=%s "
         "resume=%s from_batch=%s max_batches=%s",
         resolved_cards_path,
         resolved_rulings_path,
         data_root,
         meili_url,
         _mask_secret(meili_api_key),
+        embedding_profile,
         model_name,
+        embedder_name,
+        embedding_dimensions,
         batch_size,
+        encode_batch_size,
+        cpu_threads,
         upload_batch_size,
+        upload_wait_tasks_every,
         full_upload_batch,
         resume,
         from_batch,
@@ -122,10 +145,23 @@ def run_meilisearch_ingest(
 
     vectorizer_started_at = perf_counter()
     logger.info("ENTER step=init_vectorizer model=%s", model_name)
-    vectorizer = BgeM3Vectorizer(model_name=model_name)
+    vectorizer = SentenceTransformerVectorizer(
+        model_name=model_name,
+        encode_batch_size=encode_batch_size,
+        cpu_threads=cpu_threads,
+    )
+    model_dimensions = vectorizer.embedding_dimension
+    if embedding_dimensions != model_dimensions:
+        raise ValueError(
+            "Embedding dimension mismatch in configured profile: "
+            f"profile={embedding_profile} configured={embedding_dimensions} "
+            f"model={model_dimensions} model_name={model_name}"
+        )
     logger.info(
-        "EXIT  step=init_vectorizer duration_sec=%.3f",
+        "EXIT  step=init_vectorizer duration_sec=%.3f dimensions=%s embedder=%s",
         perf_counter() - vectorizer_started_at,
+        embedding_dimensions,
+        embedder_name,
     )
 
     rulings_started_at = perf_counter()
@@ -143,7 +179,12 @@ def run_meilisearch_ingest(
     try:
         client.enable_vector_store_experimental()
         client.ensure_index(index_uid=index_uid, primary_key="id")
-        client.update_settings(index_uid=index_uid, settings_path=settings_path)
+        client.update_settings(
+            index_uid=index_uid,
+            settings_path=settings_path,
+            embedder_name=embedder_name,
+            dimensions=embedding_dimensions,
+        )
         logger.info(
             "EXIT  step=prepare_meilisearch duration_sec=%.3f",
             perf_counter() - meili_started_at,
@@ -175,7 +216,7 @@ def run_meilisearch_ingest(
                         output_path=vectorized_path,
                         vectorizer=vectorizer,
                         batch_size=batch_size,
-                        embedder_name="bge_m3",
+                        embedder_name=embedder_name,
                     )
                     batch["vectorized_path"] = str(vectorized_path)
                     batch["status"] = "vectorized"
@@ -200,6 +241,7 @@ def run_meilisearch_ingest(
                     jsonl_path=vectorized_path,
                     batch_size=upload_batch_size,
                     full_batch=full_upload_batch,
+                    wait_tasks_every=upload_wait_tasks_every,
                 )
                 batch["upload_batches"] = int(upload_batches)
                 batch["status"] = "uploaded"
