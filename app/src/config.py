@@ -55,10 +55,11 @@ class Settings(BaseSettings):
     search_default_candidate_limit: int = 60
     search_max_candidate_limit: int = 200
 
-    rerank_enabled_default: bool = True
+    rerank_enabled_default: bool = Field(default=False, alias="RERANK_ENABLED_DEFAULT")
     rerank_default_top_k: int = 40
     rerank_max_top_k: int = 100
     rerank_default_weight: float = 0.7
+    rerank_warmup_on_startup: bool = Field(default=False, alias="RERANK_WARMUP_ON_STARTUP")
     rerank_model_name: str = Field(
         default="cross-encoder/ms-marco-MiniLM-L-6-v2",
         alias="RERANK_MODEL_NAME",

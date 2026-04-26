@@ -7,6 +7,7 @@ from fastapi import FastAPI
 
 from app.src.api.search import router as search_router
 from app.src.config import Settings
+from app.src.services.domain_semantic_layer_service import DomainSemanticLayerService
 from app.src.services.embedding_service import EmbeddingService
 from app.src.services.meilisearch_service import MeiliSearchService
 from app.src.services.reranker_service import RerankerService
@@ -40,12 +41,21 @@ async def lifespan(app: FastAPI):
         api_key=settings.meilisearch_api_key,
         index_uid=settings.meilisearch_index_uid,
     )
+    app.state.domain_semantic_layer_service = DomainSemanticLayerService(
+        base_url=settings.meilisearch_url,
+        api_key=settings.meilisearch_api_key,
+        index_uid=settings.query_semantic_layer_index_uid,
+        cache_ttl_seconds=settings.query_expansion_cache_ttl_seconds,
+    )
     app.state.reranker_service = RerankerService(model_name=settings.rerank_model_name)
+    if settings.rerank_warmup_on_startup:
+        app.state.reranker_service.warmup()
     try:
         logger.info("EXIT  app_lifespan_startup")
         yield
     finally:
         logger.info("ENTER app_lifespan_shutdown")
+        app.state.domain_semantic_layer_service.close()
         app.state.meili_service.close()
         logger.info("EXIT  app_lifespan_shutdown")
 

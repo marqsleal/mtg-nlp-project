@@ -33,3 +33,8 @@ class RerankerService:
         normalized = [float(value) for value in scores]
         logger.info("EXIT  rerank_score docs=%s", len(normalized))
         return normalized
+
+    def warmup(self) -> None:
+        logger.info("ENTER reranker_warmup")
+        self._get_model()
+        logger.info("EXIT  reranker_warmup")

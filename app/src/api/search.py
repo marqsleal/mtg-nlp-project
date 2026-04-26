@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, Request
 
 from app.src.config import Settings
 from app.src.models.search import SearchHit, SearchMeta, SearchRequest, SearchResponse
+from app.src.services.domain_semantic_layer_service import DomainSemanticLayerService
 from app.src.services.embedding_service import EmbeddingService
 from app.src.services.meilisearch_service import MeiliSearchService
 from app.src.services.reranker_service import RerankerService
@@ -27,6 +28,10 @@ def _get_embedding_service(request: Request) -> EmbeddingService:
 
 def _get_meili_service(request: Request) -> MeiliSearchService:
     return request.app.state.meili_service
+
+
+def _get_domain_semantic_layer_service(request: Request) -> DomainSemanticLayerService:
+    return request.app.state.domain_semantic_layer_service
 
 
 def _get_reranker_service(request: Request) -> RerankerService:
@@ -89,11 +94,13 @@ def semantic_search(
     settings: Annotated[Settings, Depends(_get_settings)],
     embedding_service: Annotated[EmbeddingService, Depends(_get_embedding_service)],
     meili_service: Annotated[MeiliSearchService, Depends(_get_meili_service)],
+    domain_semantic_layer_service: Annotated[
+        DomainSemanticLayerService, Depends(_get_domain_semantic_layer_service)
+    ],
     reranker_service: Annotated[RerankerService, Depends(_get_reranker_service)],
 ) -> SearchResponse:
     logger.info("ENTER endpoint=v1_search")
     start = perf_counter()
-    query_vector = embedding_service.embed_query(payload.query)
 
     limit = min(payload.limit or settings.search_default_limit, settings.search_max_limit)
     offset = payload.offset if payload.offset is not None else settings.search_default_offset
@@ -147,6 +154,31 @@ def semantic_search(
     if not payload.retrieve_vectors and attributes_to_retrieve is None:
         attributes_to_retrieve = ["*"]
 
+    retrieval_query = payload.query
+    query_expansion_applied = False
+    expanded_terms: list[str] = []
+    expanded_query: str | None = None
+    if query_expansion_enabled:
+        try:
+            (
+                query_expansion_applied,
+                expanded_terms,
+                expanded_query,
+            ) = domain_semantic_layer_service.expand_query(
+                query=payload.query,
+                max_terms=expansion_max_terms,
+                min_score=expansion_min_score,
+            )
+            if query_expansion_applied and expanded_query:
+                retrieval_query = expanded_query
+        except Exception:
+            logger.exception("query expansion failed, falling back to original query")
+            query_expansion_applied = False
+            expanded_terms = []
+            expanded_query = None
+
+    query_vector = embedding_service.embed_query(retrieval_query)
+
     estimated_total_hits = 0
     if fusion_mode == "rrf":
         retrieval_window = min(
@@ -154,7 +186,7 @@ def semantic_search(
             settings.search_max_candidate_limit,
         )
         fts_result = meili_service.fts_search(
-            query=payload.query,
+            query=retrieval_query,
             limit=retrieval_window,
             offset=0,
             search_filter=payload.filter,
@@ -183,7 +215,7 @@ def semantic_search(
         candidate_limit = retrieval_window
     else:
         search_result = meili_service.semantic_search(
-            query=payload.query,
+            query=retrieval_query,
             vector=query_vector,
             embedder_name=embedding_service.profile.embedder_name,
             semantic_ratio=semantic_ratio,
@@ -260,9 +292,9 @@ def semantic_search(
         fusion_mode=fusion_mode,
         rrf_k=rrf_k if fusion_mode == "rrf" else None,
         rrf_window=rrf_window if fusion_mode == "rrf" else None,
-        query_expansion_applied=False,
-        expanded_terms=[],
-        expanded_query=None,
+        query_expansion_applied=query_expansion_applied,
+        expanded_terms=expanded_terms,
+        expanded_query=expanded_query,
     )
     logger.info(
         "EXIT  endpoint=v1_search duration_ms=%s mode=%s fusion=%s query_expansion=%s "

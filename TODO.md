@@ -181,15 +181,15 @@ Lazy load de reranker, default operacional de rerank e warmup explícito.
 - Metadados de expansão disponíveis conforme contrato.
 
 ### Checklist da issue
-- [ ] Implementar `DomainSemanticLayerService`.
-- [ ] Integrar expansão no endpoint `/v1/search`.
-- [ ] Aplicar expansão antes do retrieval (`hybrid`/`rrf`).
-- [ ] Adicionar cache TTL de expansões.
-- [ ] Adicionar metadados de expansão no `meta` da resposta.
-- [ ] Implementar fallback para query original quando semantic layer falhar.
-- [ ] Implementar lazy load do reranker (`rerank=true`).
-- [ ] Manter `rerank=false` como default operacional.
-- [ ] Implementar warmup explícito no startup.
+- [x] Implementar `DomainSemanticLayerService`.
+- [x] Integrar expansão no endpoint `/v1/search`.
+- [x] Aplicar expansão antes do retrieval (`hybrid`/`rrf`).
+- [x] Adicionar cache TTL de expansões.
+- [x] Adicionar metadados de expansão no `meta` da resposta.
+- [x] Implementar fallback para query original quando semantic layer falhar.
+- [x] Implementar lazy load do reranker (`rerank=true`).
+- [x] Manter `rerank=false` como default operacional.
+- [x] Implementar warmup explícito no startup.
 
 ---
 
