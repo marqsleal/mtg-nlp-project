@@ -220,3 +220,6 @@ __marimo__/
 storage/
 db/storage/
 etl/data/
+
+package-lock.json
+repomix-output.xml
