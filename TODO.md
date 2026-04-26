@@ -70,12 +70,12 @@ Definir `storage/` como raiz lógica e padrão agnóstico de backend (`file://` 
 - Mapeamento de paths legado -> novo definido formalmente.
 
 ### Checklist da issue
-- [ ] Definir schema do índice `mtg_domain_semantic_layer`.
-- [ ] Definir variáveis `QUERY_*` de expansão no `.env.example`.
-- [ ] Definir variáveis `SEARCH_FUSION_*` e `SEARCH_RRF_*` no `.env.example`.
-- [ ] Definir contrato de metadados de resposta para fusão e expansão.
-- [ ] Definir política oficial de paths em `storage/`.
-- [ ] Definir regra de compatibilidade de 1 ciclo para paths legados.
+- [x] Definir schema do índice `mtg_domain_semantic_layer`.
+- [x] Definir variáveis `QUERY_*` de expansão no `.env.example`.
+- [x] Definir variáveis `SEARCH_FUSION_*` e `SEARCH_RRF_*` no `.env.example`.
+- [x] Definir contrato de metadados de resposta para fusão e expansão.
+- [x] Definir política oficial de paths em `storage/`.
+- [x] Definir regra de compatibilidade de 1 ciclo para paths legados.
 
 ---
 

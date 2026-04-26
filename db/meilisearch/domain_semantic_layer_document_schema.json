@@ -1,0 +1,20 @@
+{
+  "index_uid": "mtg_domain_semantic_layer",
+  "primary_key": "id",
+  "document_schema": {
+    "id": "string (normalized base term)",
+    "term": "string (base term as indexed)",
+    "df": "integer (document frequency)",
+    "tf": "integer (term frequency)",
+    "idf": "float (inverse document frequency)",
+    "expansions": [
+      {
+        "term": "string",
+        "score": "float",
+        "kind": "enum: pmi | semantic | manual"
+      }
+    ],
+    "updated_at": "string (ISO-8601 datetime)",
+    "dataset_version": "string"
+  }
+}

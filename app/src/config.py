@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -14,6 +16,29 @@ class Settings(BaseSettings):
     meilisearch_url: str = Field(default="http://127.0.0.1:7700", alias="MEILISEARCH_URL")
     meilisearch_api_key: str | None = Field(default=None, alias="MEILISEARCH_API_KEY")
     meilisearch_index_uid: str = Field(default="mtg_cards", alias="MEILISEARCH_INDEX_UID")
+    query_semantic_layer_index_uid: str = Field(
+        default="mtg_domain_semantic_layer",
+        alias="QUERY_SEMANTIC_LAYER_INDEX_UID",
+    )
+    query_expansion_enabled: bool = Field(default=True, alias="QUERY_EXPANSION_ENABLED")
+    query_expansion_max_terms: int = Field(default=5, ge=1, alias="QUERY_EXPANSION_MAX_TERMS")
+    query_expansion_min_score: float = Field(
+        default=0.30,
+        ge=0.0,
+        le=1.0,
+        alias="QUERY_EXPANSION_MIN_SCORE",
+    )
+    query_expansion_cache_ttl_seconds: int = Field(
+        default=600,
+        ge=0,
+        alias="QUERY_EXPANSION_CACHE_TTL_SECONDS",
+    )
+    search_fusion_mode: Literal["hybrid", "rrf"] = Field(
+        default="hybrid",
+        alias="SEARCH_FUSION_MODE",
+    )
+    search_rrf_k: int = Field(default=60, ge=1, alias="SEARCH_RRF_K")
+    search_rrf_window: int = Field(default=100, ge=1, alias="SEARCH_RRF_WINDOW")
 
     embedding_model_profile: str = Field(
         default="bge_small_en_v15",

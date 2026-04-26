@@ -118,6 +118,28 @@ def semantic_search(
         if payload.rerank_weight is not None
         else settings.rerank_default_weight
     )
+    fusion_mode = (
+        payload.fusion_mode if payload.fusion_mode is not None else settings.search_fusion_mode
+    )
+    rrf_k = payload.rrf_k if payload.rrf_k is not None else settings.search_rrf_k
+    rrf_window = (
+        payload.rrf_window if payload.rrf_window is not None else settings.search_rrf_window
+    )
+    query_expansion_enabled = (
+        payload.query_expansion
+        if payload.query_expansion is not None
+        else settings.query_expansion_enabled
+    )
+    expansion_max_terms = (
+        payload.expansion_max_terms
+        if payload.expansion_max_terms is not None
+        else settings.query_expansion_max_terms
+    )
+    expansion_min_score = (
+        payload.expansion_min_score
+        if payload.expansion_min_score is not None
+        else settings.query_expansion_min_score
+    )
 
     attributes_to_retrieve = payload.attributes_to_retrieve
     if not payload.retrieve_vectors and attributes_to_retrieve is None:
@@ -191,12 +213,23 @@ def semantic_search(
         rerank_applied=rerank_applied,
         embedder_name=embedding_service.profile.embedder_name,
         model_name=embedding_service.profile.model_name,
+        fusion_mode=fusion_mode,
+        rrf_k=rrf_k if fusion_mode == "rrf" else None,
+        rrf_window=rrf_window if fusion_mode == "rrf" else None,
+        query_expansion_applied=False,
+        expanded_terms=[],
+        expanded_query=None,
     )
     logger.info(
-        "EXIT  endpoint=v1_search duration_ms=%s mode=%s query_len=%s limit=%s "
-        "candidate_limit=%s hits=%s rerank=%s",
+        "EXIT  endpoint=v1_search duration_ms=%s mode=%s fusion=%s query_expansion=%s "
+        "query_expansion_max_terms=%s query_expansion_min_score=%.2f query_len=%s "
+        "limit=%s candidate_limit=%s hits=%s rerank=%s",
         total_ms,
         mode,
+        fusion_mode,
+        query_expansion_enabled,
+        expansion_max_terms,
+        expansion_min_score,
         len(payload.query),
         limit,
         candidate_limit,

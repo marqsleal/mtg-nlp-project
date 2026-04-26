@@ -1,0 +1,26 @@
+{
+  "searchableAttributes": [
+    "term",
+    "expansions.term"
+  ],
+  "displayedAttributes": [
+    "id",
+    "term",
+    "df",
+    "tf",
+    "idf",
+    "expansions",
+    "updated_at",
+    "dataset_version"
+  ],
+  "filterableAttributes": [
+    "dataset_version",
+    "expansions.kind"
+  ],
+  "sortableAttributes": [
+    "updated_at",
+    "idf",
+    "tf",
+    "df"
+  ]
+}

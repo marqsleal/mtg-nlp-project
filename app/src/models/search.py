@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -41,6 +41,12 @@ class SearchRequest(BaseModel):
         le=1.0,
         description="Weight of reranker score in final blended score.",
     )
+    query_expansion: bool | None = Field(default=None)
+    expansion_max_terms: int | None = Field(default=None, ge=1, le=20)
+    expansion_min_score: float | None = Field(default=None, ge=0.0, le=1.0)
+    fusion_mode: Literal["hybrid", "rrf"] | None = Field(default=None)
+    rrf_k: int | None = Field(default=None, ge=1, le=1000)
+    rrf_window: int | None = Field(default=None, ge=1, le=5000)
     retrieve_vectors: bool = False
 
     @field_validator("query")
@@ -75,6 +81,12 @@ class SearchMeta(BaseModel):
     rerank_applied: bool
     embedder_name: str
     model_name: str
+    fusion_mode: Literal["hybrid", "rrf"]
+    rrf_k: int | None = None
+    rrf_window: int | None = None
+    query_expansion_applied: bool = False
+    expanded_terms: list[str] = Field(default_factory=list)
+    expanded_query: str | None = None
 
 
 class SearchResponse(BaseModel):
