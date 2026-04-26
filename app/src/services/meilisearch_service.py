@@ -67,6 +67,11 @@ class MeiliSearchService:
         response.raise_for_status()
         return response.json()
 
+    def _post_search(self, payload: dict[str, Any]) -> dict[str, Any]:
+        response = self.client.post(f"/indexes/{self.index_uid}/search", json=payload)
+        response.raise_for_status()
+        return response.json()
+
     def semantic_search(
         self,
         query: str,
@@ -102,11 +107,85 @@ class MeiliSearchService:
         if attributes_to_retrieve is not None:
             payload["attributesToRetrieve"] = attributes_to_retrieve
 
-        response = self.client.post(f"/indexes/{self.index_uid}/search", json=payload)
-        response.raise_for_status()
-        result = response.json()
+        result = self._post_search(payload)
         logger.info(
             "EXIT  semantic_search estimated_total_hits=%s processing_time_ms=%s",
+            result.get("estimatedTotalHits", 0),
+            result.get("processingTimeMs", 0),
+        )
+        return result
+
+    def fts_search(
+        self,
+        query: str,
+        limit: int,
+        offset: int,
+        search_filter: str | list[str] | None,
+        attributes_to_retrieve: list[str] | None,
+        show_ranking_score: bool,
+    ) -> dict[str, Any]:
+        logger.info(
+            "ENTER fts_search index_uid=%s limit=%s offset=%s has_filter=%s",
+            self.index_uid,
+            limit,
+            offset,
+            search_filter is not None,
+        )
+        payload: dict[str, Any] = {
+            "q": query,
+            "limit": limit,
+            "offset": offset,
+            "showRankingScore": show_ranking_score,
+        }
+        if search_filter is not None:
+            payload["filter"] = search_filter
+        if attributes_to_retrieve is not None:
+            payload["attributesToRetrieve"] = attributes_to_retrieve
+
+        result = self._post_search(payload)
+        logger.info(
+            "EXIT  fts_search estimated_total_hits=%s processing_time_ms=%s",
+            result.get("estimatedTotalHits", 0),
+            result.get("processingTimeMs", 0),
+        )
+        return result
+
+    def vector_search(
+        self,
+        vector: list[float],
+        embedder_name: str,
+        limit: int,
+        offset: int,
+        search_filter: str | list[str] | None,
+        attributes_to_retrieve: list[str] | None,
+        show_ranking_score: bool,
+    ) -> dict[str, Any]:
+        logger.info(
+            "ENTER vector_search index_uid=%s limit=%s offset=%s has_filter=%s",
+            self.index_uid,
+            limit,
+            offset,
+            search_filter is not None,
+        )
+        payload: dict[str, Any] = {
+            "q": "",
+            "vector": vector,
+            "hybrid": {
+                "embedder": embedder_name,
+                "semanticRatio": 1.0,
+            },
+            "limit": limit,
+            "offset": offset,
+            "showRankingScore": show_ranking_score,
+        }
+        if search_filter is not None:
+            payload["filter"] = search_filter
+        if attributes_to_retrieve is not None:
+            payload["attributesToRetrieve"] = attributes_to_retrieve
+
+        result = self._post_search(payload)
+        logger.info(
+            "EXIT  vector_search estimated_total_hits=%s processing_time_ms=%s",
             result.get("estimatedTotalHits", 0),
             result.get("processingTimeMs", 0),
         )

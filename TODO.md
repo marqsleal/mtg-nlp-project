@@ -142,12 +142,12 @@ Retornar no `meta` os parâmetros de fusão e indicadores de execução.
 - Metadados de fusão presentes no contrato de resposta.
 
 ### Checklist da issue
-- [ ] Implementar busca FTS dedicada no serviço Meilisearch.
-- [ ] Implementar busca Vector dedicada no serviço Meilisearch.
-- [ ] Implementar `RrfFusionService`/função de fusão.
-- [ ] Integrar seleção de modo de retrieval (`hybrid` | `rrf`) no endpoint.
-- [ ] Adicionar metadados de fusão (`fusion_mode`, `rrf_k`, `rrf_window`).
-- [ ] Adicionar testes unitários da lógica de fusão (ranking e dedup).
+- [x] Implementar busca FTS dedicada no serviço Meilisearch.
+- [x] Implementar busca Vector dedicada no serviço Meilisearch.
+- [x] Implementar `RrfFusionService`/função de fusão.
+- [x] Integrar seleção de modo de retrieval (`hybrid` | `rrf`) no endpoint.
+- [x] Adicionar metadados de fusão (`fusion_mode`, `rrf_k`, `rrf_window`).
+- [ ] Adicionar testes unitários da lógica de fusão (ranking e dedup). (postergado)
 
 ---
 

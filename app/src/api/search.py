@@ -11,6 +11,7 @@ from app.src.models.search import SearchHit, SearchMeta, SearchRequest, SearchRe
 from app.src.services.embedding_service import EmbeddingService
 from app.src.services.meilisearch_service import MeiliSearchService
 from app.src.services.reranker_service import RerankerService
+from app.src.services.rrf_fusion_service import fuse_rrf
 
 router = APIRouter(prefix="/v1", tags=["search"])
 logger = logging.getLogger("app.api.search")
@@ -108,11 +109,12 @@ def semantic_search(
     )
     candidate_limit = payload.candidate_limit or settings.search_default_candidate_limit
     candidate_limit = max(limit, min(candidate_limit, settings.search_max_candidate_limit))
+    retrieval_limit = max(candidate_limit, limit + offset)
     rerank_enabled = (
         payload.rerank if payload.rerank is not None else settings.rerank_enabled_default
     )
     rerank_top_k = payload.rerank_top_k or settings.rerank_default_top_k
-    rerank_top_k = min(rerank_top_k, settings.rerank_max_top_k, candidate_limit)
+    rerank_top_k = min(rerank_top_k, settings.rerank_max_top_k, retrieval_limit)
     rerank_weight = (
         payload.rerank_weight
         if payload.rerank_weight is not None
@@ -145,22 +147,58 @@ def semantic_search(
     if not payload.retrieve_vectors and attributes_to_retrieve is None:
         attributes_to_retrieve = ["*"]
 
-    search_result = meili_service.semantic_search(
-        query=payload.query,
-        vector=query_vector,
-        embedder_name=embedding_service.profile.embedder_name,
-        semantic_ratio=semantic_ratio,
-        limit=candidate_limit,
-        offset=offset,
-        search_filter=payload.filter,
-        attributes_to_retrieve=attributes_to_retrieve,
-        show_ranking_score=show_ranking_score,
-    )
-
-    raw_hits = search_result.get("hits", [])
+    estimated_total_hits = 0
+    if fusion_mode == "rrf":
+        retrieval_window = min(
+            max(rrf_window, retrieval_limit),
+            settings.search_max_candidate_limit,
+        )
+        fts_result = meili_service.fts_search(
+            query=payload.query,
+            limit=retrieval_window,
+            offset=0,
+            search_filter=payload.filter,
+            attributes_to_retrieve=attributes_to_retrieve,
+            show_ranking_score=show_ranking_score,
+        )
+        vector_result = meili_service.vector_search(
+            vector=query_vector,
+            embedder_name=embedding_service.profile.embedder_name,
+            limit=retrieval_window,
+            offset=0,
+            search_filter=payload.filter,
+            attributes_to_retrieve=attributes_to_retrieve,
+            show_ranking_score=show_ranking_score,
+        )
+        raw_hits = fuse_rrf(
+            fts_hits=fts_result.get("hits", []),
+            vector_hits=vector_result.get("hits", []),
+            k=rrf_k,
+            window=retrieval_window,
+        )
+        estimated_total_hits = max(
+            int(fts_result.get("estimatedTotalHits", 0)),
+            int(vector_result.get("estimatedTotalHits", 0)),
+        )
+        candidate_limit = retrieval_window
+    else:
+        search_result = meili_service.semantic_search(
+            query=payload.query,
+            vector=query_vector,
+            embedder_name=embedding_service.profile.embedder_name,
+            semantic_ratio=semantic_ratio,
+            limit=retrieval_limit,
+            offset=0,
+            search_filter=payload.filter,
+            attributes_to_retrieve=attributes_to_retrieve,
+            show_ranking_score=show_ranking_score,
+        )
+        raw_hits = search_result.get("hits", [])
+        estimated_total_hits = int(search_result.get("estimatedTotalHits", 0))
+        candidate_limit = retrieval_limit
 
     rerank_applied = False
-    mode = "hybrid"
+    mode = "rrf" if fusion_mode == "rrf" else "hybrid"
     if rerank_enabled and raw_hits:
         raw_hits = _apply_rerank(
             hits=raw_hits,
@@ -170,16 +208,16 @@ def semantic_search(
             rerank_weight=rerank_weight,
         )
         rerank_applied = True
-        mode = "hybrid_reranked"
+        mode = "rrf_reranked" if fusion_mode == "rrf" else "hybrid_reranked"
 
     if payload.min_ranking_score is not None:
         raw_hits = [
             item
             for item in raw_hits
-            if float(item.get("_finalScore", item.get("_rankingScore", 0.0)))
+            if float(item.get("_finalScore", item.get("_rrfScore", item.get("_rankingScore", 0.0))))
             >= payload.min_ranking_score
         ]
-    raw_hits = raw_hits[:limit]
+    raw_hits = raw_hits[offset : offset + limit]
 
     hits: list[SearchHit] = []
     for item in raw_hits:
@@ -193,8 +231,14 @@ def semantic_search(
                 lang=document.get("lang"),
                 set=document.get("set"),
                 rarity=document.get("rarity"),
-                score=document.get("_finalScore", document.get("_rankingScore")),
-                retrieval_score=document.get("_retrievalScoreNorm", document.get("_rankingScore")),
+                score=document.get(
+                    "_finalScore",
+                    document.get("_rrfScore", document.get("_rankingScore")),
+                ),
+                retrieval_score=document.get(
+                    "_retrievalScoreNorm",
+                    document.get("_rrfScore", document.get("_rankingScore")),
+                ),
                 rerank_score=document.get("_rerankScoreNorm"),
                 document=document,
             )
@@ -205,7 +249,7 @@ def semantic_search(
         query=payload.query,
         limit=limit,
         offset=offset,
-        estimated_total_hits=int(search_result.get("estimatedTotalHits", 0)),
+        estimated_total_hits=estimated_total_hits,
         processing_time_ms=total_ms,
         mode=mode,
         candidate_limit=candidate_limit,
