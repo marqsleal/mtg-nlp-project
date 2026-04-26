@@ -94,9 +94,13 @@ def _normalize_card_faces(card: ScryfallCard) -> list[dict[str, Any]] | None:
 
 
 def _card_to_record(card: ScryfallCard) -> dict[str, Any]:
+    # Prefer oracle_id as canonical identity so search/index can collapse print variants.
+    canonical_oracle_id = card.oracle_id.strip() if card.oracle_id else ""
+    canonical_oracle_id = canonical_oracle_id or card.id
+
     return {
-        "id": card.id,
-        "oracle_id": card.oracle_id,
+        "id": canonical_oracle_id,
+        "oracle_id": canonical_oracle_id,
         "name": _normalize_required_text(card.name),
         "lang": _normalize_required_text(card.lang, lower=True),
         "released_at": card.released_at.isoformat() if card.released_at else None,
@@ -125,7 +129,8 @@ def transform_raw_cards(raw_file_path: Path) -> list[dict[str, Any]]:
     unique_cards: dict[str, dict[str, Any]] = {}
     for card_data in cards_data:
         card = ScryfallCard.model_validate(card_data)
-        unique_cards[card.id] = _card_to_record(card)
+        record = _card_to_record(card)
+        unique_cards[record["id"]] = record
 
     return list(unique_cards.values())
 

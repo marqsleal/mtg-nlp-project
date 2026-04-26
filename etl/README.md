@@ -28,7 +28,7 @@ Script: `etl/run_scryfall_etl.py`
 Passos:
 
 1. Busca metadados de bulk (`/bulk-data`).
-2. Faz download do dataset (`unique_artwork` por padrão).
+2. Faz download do dataset (`oracle_cards` por padrão).
 3. Transforma para schema normalizado.
 4. Salva `cards` e opcionalmente `rullings`.
 5. Gera batches de cards para ingestão no Meilisearch.
@@ -36,7 +36,7 @@ Passos:
 Comando recomendado:
 
 ```bash
-python etl/run_scryfall_etl.py --dataset unique_artwork --with-rulings --batch-docs 500
+python etl/run_scryfall_etl.py --dataset oracle_cards --with-rulings --batch-docs 500
 ```
 
 ## Pipeline Meilisearch

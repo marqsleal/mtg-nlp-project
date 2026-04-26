@@ -9,7 +9,7 @@ class MeiliCardDocument(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     id: str
-    oracle_id: str | None = None
+    oracle_id: str
     name: str
     lang: str
     released_at: date | None = None

@@ -178,7 +178,7 @@ def run_meilisearch_ingest(
     client = MeiliSearchClient(url=meili_url, api_key=meili_api_key)
     try:
         client.enable_vector_store_experimental()
-        client.ensure_index(index_uid=index_uid, primary_key="id")
+        client.ensure_index(index_uid=index_uid, primary_key="oracle_id")
         client.update_settings(
             index_uid=index_uid,
             settings_path=settings_path,

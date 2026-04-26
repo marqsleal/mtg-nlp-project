@@ -72,6 +72,6 @@ Payload com hiperparâmetros (opcionais):
 Execução direta via módulo:
 
 ```bash
-.venv/bin/python -m etl.run_scryfall_etl --dataset unique_artwork --with-rulings --batch-docs 500
+.venv/bin/python -m etl.run_scryfall_etl --dataset oracle_cards --with-rulings --batch-docs 500
 .venv/bin/python -m etl.run_meilisearch_ingest --meili-api-key "$MEILISEARCH_API_KEY" --max-batches 1
 ```

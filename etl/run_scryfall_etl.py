@@ -20,7 +20,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run Scryfall bulk ETL.")
     parser.add_argument(
         "--dataset",
-        default="unique_artwork",
+        default="oracle_cards",
         choices=["default_cards", "oracle_cards", "unique_artwork", "all_cards", "rulings"],
         help="Scryfall bulk dataset type.",
     )

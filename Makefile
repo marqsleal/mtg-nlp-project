@@ -69,18 +69,22 @@ meilisearch_logs:
 
 
 ## etl
-.PHONY: scryfall_etl
-scryfall_etl:
-	@$(VENV_PYTHON) -m etl.run_scryfall_etl --dataset unique_artwork --force --with-rulings --batch-docs 500
+.PHONY: etl_scryfall
+etl_scryfall:
+	@$(VENV_PYTHON) -m etl.run_scryfall_etl \
+	--dataset oracle_cards \
+	--force \
+	--with-rulings \
+	--batch-docs 500
 
-.PHONY: meilisearch_etl
-meilisearch_etl:
+.PHONY: etl_meilisearch
+etl_meilisearch:
 	@$(VENV_PYTHON) -m etl.run_meilisearch_ingest \
 	--max-batches 1 \
 	--meili-api-key "$(MEILISEARCH_API_KEY)"
 
-.PHONY: meilisearch_etl_max
-meilisearch_etl_max:
+.PHONY: etl_meilisearch_max
+etl_meilisearch_max:
 	@$(VENV_PYTHON) -m etl.run_meilisearch_ingest \
 	--meili-api-key "$(MEILISEARCH_API_KEY)" \
 	--model-profile bge_small_en_v15 \

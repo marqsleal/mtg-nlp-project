@@ -42,7 +42,7 @@ def _write_state(state: ScryfallEtlState, state_path: Path) -> None:
 
 
 def run_scryfall_etl(
-    dataset_type: str = "unique_artwork",
+    dataset_type: str = "oracle_cards",
     force: bool = False,
     output_parquet: bool = True,
     data_root: Path = Path("etl/data"),
@@ -215,7 +215,7 @@ def run_scryfall_etl(
 
 
 def run_scryfall_etl_with_optional_rulings(
-    dataset_type: str = "unique_artwork",
+    dataset_type: str = "oracle_cards",
     include_rulings: bool = False,
     force: bool = False,
     output_parquet: bool = True,

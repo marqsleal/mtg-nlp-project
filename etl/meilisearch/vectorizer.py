@@ -106,7 +106,7 @@ def vectorize_cards_batch_file(
 
             raw_card = json.loads(line)
             card = MeiliCardDocument.model_validate(raw_card)
-            card.rulings_text = "\n".join(rulings_map.get(card.oracle_id or "", []))
+            card.rulings_text = "\n".join(rulings_map.get(card.oracle_id, []))
             card.search_text = _build_search_text(card)
 
             batch_cards.append(card.model_dump(mode="json"))
