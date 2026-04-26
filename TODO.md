@@ -107,11 +107,11 @@ Adicionar target de execução no `Makefile`.
 - Artefatos do builder versionados em `storage/semantic_layer/<dataset_version>/`.
 
 ### Checklist da issue
-- [ ] Criar módulo ETL do builder.
-- [ ] Criar CLI `run_semantic_layer_build.py`.
-- [ ] Criar/validar settings do índice `mtg_domain_semantic_layer`.
-- [ ] Adicionar alvo de execução no `Makefile`.
-- [ ] Persistir artefatos versionados da camada semântica.
+- [x] Criar módulo ETL do builder.
+- [x] Criar CLI `run_semantic_layer_build.py`.
+- [x] Criar/validar settings do índice `mtg_domain_semantic_layer`.
+- [x] Adicionar alvo de execução no `Makefile`.
+- [x] Persistir artefatos versionados da camada semântica.
 
 ---
 

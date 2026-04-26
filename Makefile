@@ -94,6 +94,11 @@ etl_meilisearch_max:
 	--upload-batch-size 2000 \
 	--upload-wait-tasks-every 8
 
+.PHONY: etl_semantic_layer
+etl_semantic_layer:
+	@$(VENV_PYTHON) -m etl.run_semantic_layer_build \
+	--meili-api-key "$(MEILISEARCH_API_KEY)"
+
 .PHONY: api_dev
 api_dev:
 	@$(VENV_PYTHON) -m uvicorn app.src.main:app --host 0.0.0.0 --port 8000 --reload
