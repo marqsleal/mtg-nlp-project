@@ -12,7 +12,7 @@ from etl.meilisearch.batching import (
     split_cards_into_batches,
     write_json_atomic,
 )
-from etl.paths import EtlPaths
+from etl.paths import DEFAULT_DATA_ROOT, EtlPaths
 
 from .client import ScryfallClient
 from .models import ScryfallEtlState
@@ -45,7 +45,7 @@ def run_scryfall_etl(
     dataset_type: str = "oracle_cards",
     force: bool = False,
     output_parquet: bool = True,
-    data_root: Path = Path("etl/data"),
+    data_root: Path = DEFAULT_DATA_ROOT,
     batch_docs: int = 2000,
 ) -> dict[str, str | int | bool | None]:
     run_started_at = perf_counter()
@@ -82,7 +82,7 @@ def run_scryfall_etl(
         dataset_metadata.download_uri,
     )
 
-    previous_state = _read_state(state_path)
+    previous_state = _read_state(paths.resolve_legacy_read_path(state_path))
     if (
         not force
         and previous_state is not None
@@ -219,7 +219,7 @@ def run_scryfall_etl_with_optional_rulings(
     include_rulings: bool = False,
     force: bool = False,
     output_parquet: bool = True,
-    data_root: Path = Path("etl/data"),
+    data_root: Path = DEFAULT_DATA_ROOT,
     batch_docs: int = 2000,
 ) -> dict[str, object]:
     parent_started_at = perf_counter()

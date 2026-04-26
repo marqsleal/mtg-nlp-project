@@ -5,7 +5,8 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict
 
-DEFAULT_DATA_ROOT = Path("etl/data")
+DEFAULT_DATA_ROOT = Path("storage")
+LEGACY_DATA_ROOT = Path("etl/data")
 
 
 def _dataset_output_base(dataset_type: str) -> str:
@@ -18,11 +19,36 @@ class EtlPaths(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     data_root: Path
+    legacy_data_root: Path = LEGACY_DATA_ROOT
     date_str: str
 
     @classmethod
-    def for_today(cls, data_root: Path) -> EtlPaths:
-        return cls(data_root=data_root, date_str=datetime.now(UTC).date().isoformat())
+    def for_today(
+        cls,
+        data_root: Path,
+        legacy_data_root: Path = LEGACY_DATA_ROOT,
+    ) -> EtlPaths:
+        return cls(
+            data_root=data_root,
+            legacy_data_root=legacy_data_root,
+            date_str=datetime.now(UTC).date().isoformat(),
+        )
+
+    def resolve_legacy_read_path(self, path: Path) -> Path:
+        if path.exists():
+            return path
+        if self.data_root == self.legacy_data_root:
+            return path
+
+        try:
+            relative = path.relative_to(self.data_root)
+        except ValueError:
+            return path
+
+        legacy_path = self.legacy_data_root / relative
+        if legacy_path.exists():
+            return legacy_path
+        return path
 
     def raw_file(self, dataset_type: str) -> Path:
         return (

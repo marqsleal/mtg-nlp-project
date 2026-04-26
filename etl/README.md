@@ -13,13 +13,13 @@ Este diretório contém duas pipelines separadas:
 
 ## Estrutura de Dados
 
-- `etl/data/scryfall/raw`: arquivos bulk baixados da API.
-- `etl/data/scryfall/processed`: snapshots normalizados (`jsonl`/`parquet`).
-- `etl/data/scryfall/state`: estado de idempotência do ETL.
-- `etl/data/meilisearch/batches/input/cards`: batches gerados pelo Scryfall.
-- `etl/data/meilisearch/batches/vectorized/cards`: batches vetorizados.
-- `etl/data/meilisearch/state/ingest_cards_state.json`: checkpoint da ingestão.
-- `etl/data/meilisearch/processed`: alias de vetorizações mais recentes.
+- `storage/scryfall/raw`: arquivos bulk baixados da API.
+- `storage/scryfall/processed`: snapshots normalizados (`jsonl`/`parquet`).
+- `storage/scryfall/state`: estado de idempotência do ETL.
+- `storage/meilisearch/batches/input/cards`: batches gerados pelo Scryfall.
+- `storage/meilisearch/batches/vectorized/cards`: batches vetorizados.
+- `storage/meilisearch/state/ingest_cards_state.json`: checkpoint da ingestão.
+- `storage/meilisearch/processed`: alias de vetorizações mais recentes.
 
 ## Pipeline Scryfall
 
@@ -45,7 +45,7 @@ Script: `etl/run_meilisearch_ingest.py`
 
 Passos:
 
-1. Lê batches prontos de `etl/data/meilisearch/batches/input/cards/`.
+1. Lê batches prontos de `storage/meilisearch/batches/input/cards/`.
 2. Vetoriza lote a lote com o modelo configurado (`bge_small_en_v15` por padrão).
 3. Salva batch vetorizado em `.../batches/vectorized/cards/`.
 4. Envia o batch ao índice no Meilisearch.
@@ -86,3 +86,4 @@ Notas de operação:
 
 - `make scryfall_etl`
 - `make meilisearch_etl`
+- `make storage_up`

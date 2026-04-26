@@ -78,7 +78,10 @@ def run_meilisearch_ingest(
     resolved_rulings_path = (
         rulings_path if rulings_path is not None else paths.rulings_latest_jsonl()
     )
+    resolved_cards_path = paths.resolve_legacy_read_path(resolved_cards_path)
+    resolved_rulings_path = paths.resolve_legacy_read_path(resolved_rulings_path)
     state_path = paths.meili_ingest_state_file()
+    resolved_state_path = paths.resolve_legacy_read_path(state_path)
 
     run_started_at = perf_counter()
     profile = get_profile(embedding_profile)
@@ -118,12 +121,15 @@ def run_meilisearch_ingest(
     if not settings_path.exists():
         raise FileNotFoundError(f"Meilisearch settings file not found: {settings_path}")
 
-    state = load_state(state_path)
+    state = load_state(resolved_state_path)
     if state is None or not resume:
         logger.info("Initializing ingest state from existing card batches")
+        source_batches_dir = paths.cards_batches_dir()
+        if not any(source_batches_dir.glob("batch_*.jsonl")):
+            source_batches_dir = paths.resolve_legacy_read_path(source_batches_dir)
         state = build_ingest_state_from_existing_batches(
             cards_path=resolved_cards_path,
-            batches_dir=paths.cards_batches_dir(),
+            batches_dir=source_batches_dir,
         )
         write_json_atomic(state_path, state)
 

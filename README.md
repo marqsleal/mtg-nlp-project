@@ -14,9 +14,10 @@ O ETL é dividido em duas etapas independentes:
 
 - `etl/scryfall/`: extração + transformação.
 - `etl/meilisearch/`: vetorização + ingestão no índice.
-- `etl/data/scryfall/{raw,processed,state}`: snapshots brutos/processados e estado.
-- `etl/data/meilisearch/batches/{input,vectorized}/cards`: batches de entrada e vetorizados.
-- `etl/data/meilisearch/state/ingest_cards_state.json`: checkpoint por batch.
+- `storage/scryfall/{raw,processed,state}`: snapshots brutos/processados e estado.
+- `storage/meilisearch/batches/{input,vectorized}/cards`: batches de entrada e vetorizados.
+- `storage/meilisearch/state/ingest_cards_state.json`: checkpoint por batch.
+- `storage/semantic_layer/<dataset_version>/`: artefatos versionados da camada semântica.
 - `db/`: docker-compose e configurações do Meilisearch.
 
 ## Como Rodar
@@ -31,6 +32,7 @@ Comandos principais:
 ```bash
 make project_init
 make meilisearch_up
+make storage_up
 make scryfall_etl
 make meilisearch_etl
 ```

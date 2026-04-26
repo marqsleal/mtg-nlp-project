@@ -216,3 +216,7 @@ __marimo__/
 .streamlit/secrets.toml
 
 .codex
+# Local ETL/storage artifacts
+storage/
+db/storage/
+etl/data/

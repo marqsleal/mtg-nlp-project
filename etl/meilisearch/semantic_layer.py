@@ -11,6 +11,8 @@ from tempfile import NamedTemporaryFile
 from time import perf_counter
 from typing import Any
 
+from etl.storage import StorageConfig
+
 from .batching import write_json_atomic
 from .client import MeiliSearchClient
 
@@ -409,11 +411,22 @@ def _persist_artifacts(
     write_json_atomic(summary_path, summary)
     success_path.write_text(datetime.now(UTC).isoformat(), encoding="utf-8")
 
+    storage_config = StorageConfig.from_env()
+    storage_config = StorageConfig(
+        backend=storage_config.backend,
+        root=storage_root.resolve(),
+        s3_bucket=storage_config.s3_bucket,
+        s3_prefix=storage_config.s3_prefix,
+    )
+
     return {
         "base_dir": str(base_dir),
         "documents_jsonl_path": str(docs_jsonl_path),
         "summary_path": str(summary_path),
         "success_path": str(success_path),
+        "documents_jsonl_uri": storage_config.to_uri(docs_jsonl_path),
+        "summary_uri": storage_config.to_uri(summary_path),
+        "success_uri": storage_config.to_uri(success_path),
     }
 
 

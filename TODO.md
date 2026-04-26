@@ -258,15 +258,15 @@ Adicionar variáveis `STORAGE_*` no `.env.example` e validar operação local/pr
 - Fluxo local com MinIO funcional via `infra.storage.*`.
 
 ### Checklist da issue
-- [ ] Migrar persistência de `etl/data/` para `storage/`.
-- [ ] Migrar todos os paths de leitura/escrita para `storage/...` via `etl/paths.py`.
-- [ ] Manter fallback de leitura legado por 1 ciclo.
+- [x] Migrar persistência de `etl/data/` para `storage/`.
+- [x] Migrar todos os paths de leitura/escrita para `storage/...` via `etl/paths.py`.
+- [x] Manter fallback de leitura legado por 1 ciclo.
 - [ ] Remover paths legados após o ciclo de compatibilidade.
-- [ ] Versionar artefatos da camada semântica em `storage/semantic_layer/<dataset_version>/`.
-- [ ] Definir backend de storage (`file` e `s3` compatível) com contrato único.
-- [ ] Adicionar stack local de MinIO.
-- [ ] Adicionar targets `infra.storage.up/down/logs` no `Makefile`.
-- [ ] Adicionar variáveis `STORAGE_*` no `.env.example`.
+- [x] Versionar artefatos da camada semântica em `storage/semantic_layer/<dataset_version>/`.
+- [x] Definir backend de storage (`file` e `s3` compatível) com contrato único.
+- [x] Adicionar stack local de MinIO.
+- [x] Adicionar targets `infra.storage.up/down/logs` no `Makefile`.
+- [x] Adicionar variáveis `STORAGE_*` no `.env.example`.
 
 ---
 
